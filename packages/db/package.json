@@ -1,0 +1,19 @@
+{
+  "name": "@review-ai/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "client.ts",
+  "scripts": {
+    "generate": "prisma generate --schema=schema.prisma",
+    "migrate": "prisma migrate dev --schema=schema.prisma",
+    "seed": "ts-node seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.18.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.18.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}

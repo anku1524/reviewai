@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  SUPER_ADMIN
+  BUSINESS_OWNER
+  MANAGER
+  EMPLOYEE
+  CUSTOMER
+}
+
+enum ReviewRequestStatus {
+  PENDING
+  SENT
+  OPENED
+  CLICKED
+  COMPLETED
+  EXPIRED
+}
+
+enum ReviewRequestChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  QR
+  NFC
+  LINK
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+// ---------- Models ----------
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String?
+  role          Role     @default(BUSINESS_OWNER)
+  emailVerified Boolean  @default(false)
+  googleId      String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ownedBusinesses Business[]      @relation("BusinessOwner")
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation("BusinessOwner", fields: [ownerId], references: [id])
+  name      String
+  category  String
+  logoUrl   String?
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations     Location[]
+  customers     Customer[]
+  campaigns     Campaign[]
+  apiKeys       ApiKey[]
+  subscriptions Subscription[]
+  auditLogs     AuditLog[]
+}
+
+model Location {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id])
+  name          String
+  googlePlaceId String?
+  address       String?
+  createdAt     DateTime @default(now())
+
+  reviewRequests ReviewRequest[]
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  email      String?
+  phone      String?
+  createdAt  DateTime @default(now())
+
+  reviewRequests ReviewRequest[]
+
+  @@index([businessId])
+}
+
+model ReviewRequest {
+  id         String               @id @default(cuid())
+  customerId String
+  customer   Customer             @relation(fields: [customerId], references: [id])
+  locationId String
+  location   Location             @relation(fields: [locationId], references: [id])
+  campaignId String?
+  campaign   Campaign?            @relation(fields: [campaignId], references: [id])
+  channel    ReviewRequestChannel
+  status     ReviewRequestStatus  @default(PENDING)
+  sentAt     DateTime?
+  openedAt   DateTime?
+  clickedAt  DateTime?
+  createdAt  DateTime             @default(now())
+
+  rating Rating?
+
+  @@index([locationId])
+  @@index([status])
+}
+
+model Rating {
+  id              String         @id @default(cuid())
+  reviewRequestId String         @unique
+  reviewRequest   ReviewRequest  @relation(fields: [reviewRequestId], references: [id])
+  stars           Int
+  feedback        String?
+  sentiment       Sentiment?
+  isPrivate       Boolean        @default(false) // true when stars are low and routed away from public platforms
+  createdAt       DateTime       @default(now())
+
+  draft AIReviewDraft?
+}
+
+model AIReviewDraft {
+  id           String   @id @default(cuid())
+  ratingId     String   @unique
+  rating       Rating   @relation(fields: [ratingId], references: [id])
+  draft        String
+  tone         String   @default("professional") // professional | friendly | short | long
+  regenerated  Int      @default(0)
+  finalText    String?
+  createdAt    DateTime @default(now())
+}
+
+model Campaign {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  channel    ReviewRequestChannel
+  createdAt  DateTime @default(now())
+
+  reviewRequests ReviewRequest[]
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  businessId           String
+  business             Business           @relation(fields: [businessId], references: [id])
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 String             @default("free") // free | pro
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id])
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  action     String
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  key        String   @unique
+  label      String?
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}

@@ -1,0 +1,8 @@
+- `[x]` Add `Competitor` model to `schema.prisma` and wire relations to `Business`
+- `[x]` Execute prisma db push command to update database
+- `[x]` Create `competitors.controller.ts` with sync, list, and create routes in NestJS
+- `[x]` Register `CompetitorsController` in `businesses.module.ts`
+- `[x]` Map new API queries in Next.js client wrapper `api.ts`
+- `[x]` Add Competitors link inside `layout.tsx` dashboard sidebar navigation array
+- `[x]` Build `/dashboard/competitors` benchmarking dashboard in frontend
+- `[x]` Verify local compile and deploy updates to production on Vercel

@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Models ----------
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String?
+  role          String   @default("BUSINESS_OWNER")
+  emailVerified Boolean  @default(false)
+  googleId      String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ownedBusinesses Business[]      @relation("BusinessOwner")
+  memberships     BusinessMember[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation("BusinessOwner", fields: [ownerId], references: [id])
+  name      String
+  category  String
+  logoUrl      String?
+  primaryColor String   @default("#6366f1")
+  customDomain String?  @unique
+  timezone     String   @default("UTC")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  locations     Location[]
+  customers     Customer[]
+  members       BusinessMember[]
+  campaigns     Campaign[]
+  apiKeys       ApiKey[]
+  subscriptions Subscription[]
+  auditLogs         AuditLog[]
+  socialPostHistory SocialPostHistory[]
+  tickets           Ticket[]
+  competitors       Competitor[]
+}
+
+model BusinessMember {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  role       String   @default("EMPLOYEE")
+  invitedAt  DateTime @default(now())
+
+  @@unique([businessId, userId])
+}
+
+model Location {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id])
+  name          String
+  googlePlaceId String?
+  address       String?
+  createdAt     DateTime @default(now())
+
+  reviewRequests    ReviewRequest[]
+  googleIntegration GoogleIntegration?
+  googleReviews     GoogleReview[]
+  platformReviews   PlatformReview[]
+  tickets           Ticket[]
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  email      String?
+  phone      String?
+  createdAt  DateTime @default(now())
+
+  reviewRequests ReviewRequest[]
+
+  @@index([businessId])
+}
+
+model ReviewRequest {
+  id         String               @id @default(cuid())
+  token      String               @unique
+  customerId String
+  customer   Customer             @relation(fields: [customerId], references: [id])
+  locationId String
+  location   Location             @relation(fields: [locationId], references: [id])
+  campaignId String?
+  campaign   Campaign?            @relation(fields: [campaignId], references: [id])
+  channel    String
+  status     String               @default("PENDING")
+  sentAt     DateTime?
+  openedAt   DateTime?
+  clickedAt  DateTime?
+  createdAt  DateTime             @default(now())
+
+  rating Rating?
+
+  @@index([locationId])
+  @@index([status])
+}
+
+model Rating {
+  id              String         @id @default(cuid())
+  reviewRequestId String         @unique
+  reviewRequest   ReviewRequest  @relation(fields: [reviewRequestId], references: [id])
+  stars           Int
+  feedback        String?
+  sentiment       String?
+  isPrivate       Boolean        @default(false) // true when stars are low and routed away from public platforms
+  createdAt       DateTime       @default(now())
+
+  draft AIReviewDraft?
+  ticket Ticket?
+}
+
+model AIReviewDraft {
+  id           String   @id @default(cuid())
+  ratingId     String   @unique
+  rating       Rating   @relation(fields: [ratingId], references: [id])
+  draft        String
+  tone         String   @default("professional") // professional | friendly | short | long
+  regenerated  Int      @default(0)
+  finalText    String?
+  createdAt    DateTime @default(now())
+}
+
+model Campaign {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  name       String
+  channel    String
+  createdAt  DateTime @default(now())
+
+  reviewRequests ReviewRequest[]
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  businessId           String
+  business             Business           @relation(fields: [businessId], references: [id])
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 String             @default("free") // free | pro
+  status               String             @default("TRIALING")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id])
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  action     String
+  metadata   String?
+  createdAt  DateTime  @default(now())
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  key        String   @unique
+  label      String?
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model GoogleIntegration {
+  id           String   @id @default(cuid())
+  locationId   String   @unique
+  location     Location @relation(fields: [locationId], references: [id])
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  googleLocationName String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model GoogleReview {
+  id           String   @id @default(cuid())
+  locationId   String
+  location     Location @relation(fields: [locationId], references: [id])
+  reviewId     String   @unique
+  reviewer     String
+  profilePhotoUrl String?
+  stars        Int
+  comment      String?
+  replyComment String?
+  replyTime    DateTime?
+  createTime   DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PlatformReview {
+  id              String    @id @default(cuid())
+  locationId      String
+  location        Location  @relation(fields: [locationId], references: [id])
+  platform        String    // GOOGLE | YELP | FACEBOOK | TRIPADVISOR
+  reviewId        String    @unique
+  reviewer        String
+  profilePhotoUrl String?
+  stars           Int
+  comment         String?
+  replyComment    String?
+  replyTime       DateTime?
+  createTime      DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model SocialPostHistory {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  platform   String   // FACEBOOK | INSTAGRAM | LINKEDIN
+  reviewer   String
+  stars      Int
+  comment    String?
+  sharedAt   DateTime @default(now())
+}
+
+model Ticket {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id])
+  ratingId    String   @unique
+  rating      Rating   @relation(fields: [ratingId], references: [id])
+  status      String   // OPEN | IN_PROGRESS | RESOLVED
+  assignedTo  String?  // Manager email or name
+  resolution  String?  // Resolution details
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Competitor {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  category    String?
+  rating      Float    @default(0.0)
+  reviewCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+
+
