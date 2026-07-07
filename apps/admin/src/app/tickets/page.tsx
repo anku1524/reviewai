@@ -5,26 +5,25 @@ import { api } from "../../lib/api";
 
 type Ticket = {
   id: string;
+  title: string;
+  description: string;
+  priority: string;
   status: string;
-  assignee: string | null;
+  assignedTo: string | null;
   resolution: string | null;
   createdAt: string;
   business: { id: string; name: string };
-  location: { id: string; name: string };
-  rating: {
-    id: string;
-    stars: number;
-    feedback: string | null;
-  };
+  creator: { id: string; name: string; email: string } | null;
 };
 
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Resolution modal states
+  // Resolution controls
   const [resolvingTicketId, setResolvingTicketId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("RESOLVED");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,60 +42,67 @@ export default function AdminTicketsPage() {
     }
   }
 
-  async function handleResolve(e: React.FormEvent) {
+  function startResolve(ticket: Ticket) {
+    setResolvingTicketId(ticket.id);
+    setNotes(ticket.resolution || "");
+    setStatus(ticket.status);
+  }
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!resolvingTicketId) return;
 
-    const targetTicket = tickets.find((t) => t.id === resolvingTicketId);
-    if (!targetTicket) return;
-
     setSaving(true);
     try {
-      await api.updateTicket(targetTicket.business.id, resolvingTicketId, {
-        status: "resolved",
+      const updated = await api.adminUpdateTicket(resolvingTicketId, {
+        status,
         resolution: notes,
       });
+
+      // Update state
       setTickets((prev) =>
         prev.map((t) =>
           t.id === resolvingTicketId
-            ? { ...t, status: "resolved", resolution: notes }
+            ? { ...t, status: updated.status, resolution: updated.resolution }
             : t
         )
       );
+
       setResolvingTicketId(null);
       setNotes("");
+      alert("Ticket updated successfully!");
     } catch (err) {
       console.error(err);
-      alert("Failed to resolve ticket.");
+      alert("Failed to update ticket.");
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <div className="p-8 text-slate-500 font-medium">Loading platform escalations board...</div>;
+    return <div className="p-8 text-slate-500 font-medium">Loading platform support desk...</div>;
   }
 
   return (
     <div className="p-6 max-w-6xl mx-auto flex flex-col gap-6 text-left">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900">Global Customer Escalations</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900">Platform Support Tickets</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Monitor negative feedback escalations and resolve store complaints across all registered business profiles.
+          Review, assign, and resolve assistance requests and bug reports raised by registered business owners.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        {/* Left/Middle Column: Global tickets list */}
+        {/* Left Column: Tickets Grid */}
         <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-500 border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 uppercase text-[10px] font-bold text-slate-400">
-                  <th className="py-3 px-4">Business & Location</th>
-                  <th className="py-3 px-4">Complaint / Feedback</th>
-                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Business & User</th>
+                  <th className="py-3 px-4">Ticket Details</th>
+                  <th className="py-3 px-4">Priority / Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -106,26 +112,28 @@ export default function AdminTicketsPage() {
                     <td className="py-3 px-4">
                       <div className="flex flex-col gap-0.5 text-left">
                         <span className="font-bold text-slate-800">{t.business.name}</span>
-                        <span className="text-[10px] text-slate-400 font-medium">
-                          Loc: {t.location.name}
-                        </span>
-                        <span className="text-[9px] text-slate-400">
-                          Filed: {new Date(t.createdAt).toLocaleDateString()}
+                        {t.creator ? (
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            By: {t.creator.name} ({t.creator.email})
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">System Auto-raised</span>
+                        )}
+                        <span className="text-[9px] text-slate-400 mt-0.5 font-mono">
+                          {new Date(t.createdAt).toLocaleString()}
                         </span>
                       </div>
                     </td>
 
                     <td className="py-3 px-4">
                       <div className="flex flex-col gap-1 max-w-[280px]">
-                        <span className="text-rose-600 font-bold font-mono">
-                          {Array.from({ length: t.rating.stars }).map(() => "★").join("")}
-                        </span>
-                        <p className="text-[11px] text-slate-600 italic line-clamp-2">
-                          "{t.rating.feedback || "No written text feedback provided."}"
+                        <span className="font-bold text-slate-800">{t.title}</span>
+                        <p className="text-[11px] text-slate-500 italic line-clamp-2">
+                          "{t.description}"
                         </p>
                         {t.resolution && (
-                          <div className="bg-slate-50 border border-slate-150 p-2 rounded text-[9px] text-slate-500 mt-1">
-                            <span className="font-bold uppercase text-[8px] text-slate-400 block mb-0.5">Resolution Notes</span>
+                          <div className="bg-emerald-50/50 border border-emerald-100 p-2 rounded text-[9px] text-slate-600 mt-1">
+                            <span className="font-bold uppercase text-[8px] text-emerald-500 block mb-0.5">Admin Reply</span>
                             {t.resolution}
                           </div>
                         )}
@@ -133,33 +141,40 @@ export default function AdminTicketsPage() {
                     </td>
 
                     <td className="py-3 px-4">
-                      {t.status === "resolved" ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-700 uppercase">
-                          Resolved
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${
+                          t.priority === "URGENT"
+                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                            : t.priority === "HIGH"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-50 text-slate-700 border-slate-200"
+                        }`}>
+                          {t.priority}
                         </span>
-                      ) : (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black text-amber-700 uppercase">
-                          Pending
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${
+                          t.status === "RESOLVED" || t.status === "resolved"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-blue-50 text-blue-700 border-blue-200"
+                        }`}>
+                          {t.status}
                         </span>
-                      )}
+                      </div>
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      {t.status !== "resolved" && (
-                        <button
-                          onClick={() => setResolvingTicketId(t.id)}
-                          className="text-[10px] font-bold border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 px-2.5 py-1 rounded-md"
-                        >
-                          Resolve
-                        </button>
-                      )}
+                      <button
+                        onClick={() => startResolve(t)}
+                        className="text-[10px] font-bold border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-md"
+                      >
+                        Reply / Resolve
+                      </button>
                     </td>
                   </tr>
                 ))}
                 {tickets.length === 0 && (
                   <tr>
                     <td colSpan={4} className="py-8 text-center text-slate-400 font-medium">
-                      No unresolved customer escalations.
+                      No support tickets raised currently.
                     </td>
                   </tr>
                 )}
@@ -168,26 +183,39 @@ export default function AdminTicketsPage() {
           </div>
         </div>
 
-        {/* Right Column: Resolution Panel */}
+        {/* Right Column: Resolution form */}
         <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 mb-0.5">Ticket Settlement</h2>
+            <h2 className="text-sm font-bold text-slate-900 mb-0.5">Resolution Center</h2>
             <p className="text-[11px] text-slate-400 font-medium">
-              Submit resolution parameters and mark customer store complaints settled.
+              Submit answers, write guidelines, or close help desk tickets.
             </p>
           </div>
 
           {resolvingTicketId ? (
-            <form onSubmit={handleResolve} className="flex flex-col gap-4">
+            <form onSubmit={handleSave} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">Resolution Details</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Set Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold focus:outline-none"
+                >
+                  <option value="OPEN">Open (Pending investigation)</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="RESOLVED">Resolved (Close ticket)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Response Message</label>
                 <textarea
                   required
-                  rows={4}
+                  rows={5}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Enter response or resolution details for the business client..."
                   className="rounded-lg border border-slate-300 bg-white p-3 text-xs focus:outline-none focus:border-indigo-500"
-                  placeholder="Enter details (e.g., Refund issued, customer service followed up...)"
                 />
               </div>
 
@@ -204,13 +232,13 @@ export default function AdminTicketsPage() {
                   disabled={saving}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-2 text-xs font-bold transition shadow-md"
                 >
-                  {saving ? "Saving..." : "Close Ticket"}
+                  {saving ? "Saving..." : "Submit Answer"}
                 </button>
               </div>
             </form>
           ) : (
             <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-medium">
-              Select a pending ticket to submit resolution notes.
+              Select a support ticket to reply.
             </div>
           )}
         </div>

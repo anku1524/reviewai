@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Body, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Param, Body, Req, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { JwtAuthGuard } from "../common/guards/auth.guards";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -16,6 +16,13 @@ export class TicketsController {
       where: { businessId },
       include: {
         location: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         rating: {
           include: {
             reviewRequest: {
@@ -27,6 +34,38 @@ export class TicketsController {
         },
       },
       orderBy: { createdAt: "desc" },
+    });
+  }
+
+  @Post()
+  async createSupportTicket(
+    @Param("businessId") businessId: string,
+    @Req() req: any,
+    @Body() dto: { title: string; description: string; priority?: string }
+  ) {
+    const business = await this.prisma.business.findUnique({ where: { id: businessId } });
+    if (!business) throw new NotFoundException("Business not found.");
+
+    const creatorId = req.user.sub;
+
+    return this.prisma.ticket.create({
+      data: {
+        businessId,
+        title: dto.title,
+        description: dto.description,
+        priority: dto.priority || "MEDIUM",
+        creatorId,
+        status: "OPEN",
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 
@@ -51,6 +90,13 @@ export class TicketsController {
       },
       include: {
         location: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         rating: {
           include: {
             reviewRequest: {

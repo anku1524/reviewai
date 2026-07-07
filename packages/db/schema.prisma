@@ -26,6 +26,7 @@ model User {
   memberships     BusinessMember[]
   auditLogs       AuditLog[]
   notifications   Notification[]
+  raisedTickets   Ticket[]        @relation("RaisedTickets")
 }
 
 model Business {
@@ -256,15 +257,20 @@ model Ticket {
   id          String   @id @default(cuid())
   businessId  String
   business    Business @relation(fields: [businessId], references: [id])
-  locationId  String
-  location    Location @relation(fields: [locationId], references: [id])
-  ratingId    String   @unique
-  rating      Rating   @relation(fields: [ratingId], references: [id])
-  status      String   // OPEN | IN_PROGRESS | RESOLVED
-  assignedTo  String?  // Manager email or name
-  resolution  String?  // Resolution details
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id])
+  ratingId    String?   @unique
+  rating      Rating?   @relation(fields: [ratingId], references: [id])
+  title       String    @default("Support Request")
+  description String    @default("")
+  priority    String    @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
+  creatorId   String?
+  creator     User?     @relation("RaisedTickets", fields: [creatorId], references: [id])
+  status      String    // OPEN | IN_PROGRESS | RESOLVED
+  assignedTo  String?   // Manager email or name
+  resolution  String?   // Resolution details
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Competitor {

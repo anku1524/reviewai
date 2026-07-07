@@ -238,9 +238,34 @@ export class AdminController {
         location: {
           select: { id: true, name: true },
         },
+        creator: {
+          select: { id: true, name: true, email: true },
+        },
         rating: true,
       },
       orderBy: { createdAt: "desc" },
+    });
+  }
+
+  @Patch("tickets/:id")
+  async adminUpdateTicket(
+    @Param("id") ticketId: string,
+    @Body() dto: { status?: string; assignedTo?: string; resolution?: string }
+  ) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException("Ticket not found.");
+
+    return this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        status: dto.status,
+        assignedTo: dto.assignedTo,
+        resolution: dto.resolution,
+      },
+      include: {
+        business: { select: { id: true, name: true } },
+        creator: { select: { id: true, name: true, email: true } },
+      },
     });
   }
 }

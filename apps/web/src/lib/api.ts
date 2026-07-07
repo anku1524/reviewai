@@ -128,9 +128,11 @@ export const api = {
   getPublicWidgetData: (businessId: string) =>
     request(`/public/widgets/${businessId}/reviews`),
 
-  // Ticketing Mappings (Negative feedback escalation)
+  // Ticketing Mappings (Customer support requests)
   listTickets: (businessId: string) =>
     request(`/businesses/${businessId}/tickets`),
+  createTicket: (businessId: string, data: { title: string; description: string; priority?: string }) =>
+    request(`/businesses/${businessId}/tickets`, { method: "POST", body: JSON.stringify(data) }),
   updateTicket: (businessId: string, ticketId: string, data: { status?: string; assignedTo?: string; resolution?: string }) =>
     request(`/businesses/${businessId}/tickets/${ticketId}`, { method: "PATCH", body: JSON.stringify(data) }),
 
@@ -158,4 +160,6 @@ export const api = {
   adminSavePrompt: (value: string) =>
     request("/admin/config/prompt", { method: "POST", body: JSON.stringify({ value }) }),
   adminListGlobalTickets: () => request("/admin/tickets"),
+  adminUpdateTicket: (ticketId: string, data: { status?: string; assignedTo?: string; resolution?: string }) =>
+    request(`/admin/tickets/${ticketId}`, { method: "PATCH", body: JSON.stringify(data) }),
 };
