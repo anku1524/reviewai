@@ -23,9 +23,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const webAppUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://web-mu-five-68.vercel.app";
 
   useEffect(() => {
+    if (pathname === "/login") return;
+
     const token = localStorage.getItem("token");
     if (!token) {
-      window.location.href = `${webAppUrl}/login`;
+      router.push("/login");
       return;
     }
 
@@ -39,9 +41,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
       })
       .catch(() => {
-        window.location.href = `${webAppUrl}/login`;
+        localStorage.removeItem("token");
+        router.push("/login");
       });
-  }, [router, webAppUrl]);
+  }, [router, pathname]);
+
+  if (pathname === "/login") {
+    return (
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    );
+  }
 
   if (isAdmin === null) {
     return (
@@ -119,14 +130,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           {/* User profile foot */}
-          <div className="p-4 border-t border-slate-800/60 bg-slate-900/40 flex items-center justify-between">
-            <div className="flex flex-col gap-0.5 text-left">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">Logged in as</span>
-              <span className="text-xs font-extrabold text-white truncate max-w-[140px]">{adminName}</span>
+          <div className="p-4 border-t border-slate-800/60 bg-slate-900/40 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-0.5 text-left">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Logged in as</span>
+                <span className="text-xs font-extrabold text-white truncate max-w-[145px]">{adminName}</span>
+              </div>
+              <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[9px] font-black text-indigo-400 uppercase">
+                Admin
+              </span>
             </div>
-            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[9px] font-black text-indigo-400 uppercase">
-              Admin
-            </span>
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("admin_token");
+                router.push("/login");
+              }}
+              className="text-left text-[10px] font-bold text-slate-500 hover:text-white transition-colors mt-1"
+            >
+              Sign out of Ops
+            </button>
           </div>
 
         </aside>
