@@ -10,6 +10,10 @@ const ADMIN_NAV = [
   { href: "/", label: "Stats Overview", icon: "📊" },
   { href: "/users", label: "User Management", icon: "👥" },
   { href: "/businesses", label: "Business Auditor", icon: "🏢" },
+  { href: "/subscriptions", label: "Subscriptions MRR", icon: "💳" },
+  { href: "/ai-usage", label: "AI Usage Metrics", icon: "🤖" },
+  { href: "/audit-logs", label: "Audit Logs Log", icon: "📜" },
+  { href: "/feature-flags", label: "Feature Flags Manager", icon: "🎛️" },
   { href: "/prompt", label: "Prompt Manager", icon: "📝" },
   { href: "/tickets", label: "Global Escalations", icon: "🎫" },
 ];

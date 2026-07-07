@@ -27,6 +27,11 @@ model User {
   auditLogs       AuditLog[]
   notifications   Notification[]
   raisedTickets   Ticket[]        @relation("RaisedTickets")
+
+  // New Admin Relations
+  adminImpersonations ImpersonationLog[] @relation("AdminImpersonations")
+  bans                UserBan[]          @relation("UserBans")
+  bansIssued          UserBan[]          @relation("BannedByRelation")
 }
 
 model Business {
@@ -52,6 +57,10 @@ model Business {
   socialPostHistory SocialPostHistory[]
   tickets           Ticket[]
   competitors       Competitor[]
+
+  // New Admin Relations
+  impersonationLogs ImpersonationLog[]
+  aiUsageLogs       AIUsageLog[]
 }
 
 model BusinessMember {
@@ -288,6 +297,50 @@ model Competitor {
 model SystemConfig {
   key   String @id
   value String
+}
+
+model ImpersonationLog {
+  id               String   @id @default(cuid())
+  adminId          String
+  admin            User     @relation("AdminImpersonations", fields: [adminId], references: [id])
+  targetBusinessId String
+  business         Business @relation(fields: [targetBusinessId], references: [id])
+  reason           String
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+}
+
+model FeatureFlag {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  description           String
+  enabledPlans          String[] // e.g. ["free", "pro"]
+  enabledForBusinessIds String[]
+  globallyEnabled       Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model AIUsageLog {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id])
+  action        String   // "DRAFT" | "REPLY" | "SENTIMENT"
+  tokensUsed    Int
+  estimatedCost Float
+  model         String
+  createdAt     DateTime @default(now())
+}
+
+model UserBan {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation("UserBans", fields: [userId], references: [id])
+  reason      String
+  bannedById  String
+  bannedBy    User      @relation("BannedByRelation", fields: [bannedById], references: [id])
+  bannedAt    DateTime  @default(now())
+  liftedAt    DateTime?
 }
 
 

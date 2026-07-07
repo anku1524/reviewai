@@ -162,4 +162,15 @@ export const api = {
   adminListGlobalTickets: () => request("/admin/tickets"),
   adminUpdateTicket: (ticketId: string, data: { status?: string; assignedTo?: string; resolution?: string }) =>
     request(`/admin/tickets/${ticketId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  adminGetBusinessDetails: (id: string) => request(`/admin/businesses/${id}`),
+  adminListSubscriptions: () => request("/admin/subscriptions"),
+  adminGetAiUsage: () => request("/admin/ai-usage"),
+  adminGetAuditLogs: () => request("/admin/audit-logs"),
+  adminListFeatureFlags: () => request("/admin/feature-flags"),
+  adminCreateFeatureFlag: (data: { key: string; description: string; enabledPlans?: string[]; enabledForBusinessIds?: string[]; globallyEnabled?: boolean }) =>
+    request("/admin/feature-flags", { method: "POST", body: JSON.stringify(data) }),
+  adminToggleFeatureFlag: (id: string, data: { globallyEnabled?: boolean; enabledPlans?: string[]; enabledForBusinessIds?: string[] }) =>
+    request(`/admin/feature-flags/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  adminListApiKeys: () => request("/admin/api-keys"),
+  adminRevokeApiKey: (id: string) => request(`/admin/api-keys/${id}`, { method: "DELETE" }),
 };

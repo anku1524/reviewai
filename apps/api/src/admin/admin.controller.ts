@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, NotFoundException, BadRequestException } from "@nestjs/common";
 import { JwtAuthGuard } from "../common/guards/auth.guards";
 import { SuperAdminGuard } from "../common/guards/super-admin.guard";
 import { PrismaService } from "../prisma/prisma.service";
@@ -267,5 +267,156 @@ export class AdminController {
         creator: { select: { id: true, name: true, email: true } },
       },
     });
+  }
+
+  @Get("businesses/:id")
+  async getBusinessDetails(@Param("id") id: string) {
+    const business = await this.prisma.business.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        locations: {
+          include: {
+            _count: { select: { platformReviews: true, reviewRequests: true } }
+          }
+        },
+        members: {
+          include: {
+            user: { select: { id: true, name: true, email: true } }
+          }
+        },
+        subscriptions: true
+      }
+    });
+    if (!business) throw new NotFoundException("Business profile not found.");
+    return business;
+  }
+
+  @Get("subscriptions")
+  async listSubscriptions() {
+    const subs = await this.prisma.subscription.findMany({
+      include: {
+        business: { select: { id: true, name: true } }
+      }
+    });
+    
+    let totalMRR = 0;
+    let proCount = 0;
+    let freeCount = 0;
+    
+    subs.forEach(s => {
+      if (s.plan === "pro") {
+        proCount++;
+        totalMRR += 49;
+      } else {
+        freeCount++;
+      }
+    });
+    
+    return {
+      subscriptions: subs,
+      metrics: {
+        totalMRR,
+        proCount,
+        freeCount,
+        totalCount: subs.length
+      }
+    };
+  }
+
+  @Get("ai-usage")
+  async getAiUsageStats() {
+    const logs = await this.prisma.aIUsageLog.findMany({
+      include: {
+        business: { select: { id: true, name: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    
+    const totalTokens = logs.reduce((acc, log) => acc + log.tokensUsed, 0);
+    const totalCost = logs.reduce((acc, log) => acc + log.estimatedCost, 0);
+    
+    return {
+      logs,
+      metrics: {
+        totalTokens,
+        totalCost,
+        averageTokensPerRequest: logs.length ? Math.round(totalTokens / logs.length) : 0
+      }
+    };
+  }
+
+  @Get("audit-logs")
+  async getAuditLogs() {
+    return this.prisma.auditLog.findMany({
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        business: { select: { id: true, name: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100
+    });
+  }
+
+  @Get("feature-flags")
+  async listFeatureFlags() {
+    return this.prisma.featureFlag.findMany({
+      orderBy: { createdAt: "desc" }
+    });
+  }
+
+  @Post("feature-flags")
+  async createFeatureFlag(
+    @Body() dto: { key: string; description: string; enabledPlans?: string[]; enabledForBusinessIds?: string[]; globallyEnabled?: boolean }
+  ) {
+    const existing = await this.prisma.featureFlag.findUnique({ where: { key: dto.key } });
+    if (existing) throw new BadRequestException("Feature flag key already exists.");
+    
+    return this.prisma.featureFlag.create({
+      data: {
+        key: dto.key,
+        description: dto.description,
+        enabledPlans: dto.enabledPlans || [],
+        enabledForBusinessIds: dto.enabledForBusinessIds || [],
+        globallyEnabled: dto.globallyEnabled ?? false
+      }
+    });
+  }
+
+  @Patch("feature-flags/:id")
+  async toggleFeatureFlag(
+    @Param("id") id: string,
+    @Body() dto: { globallyEnabled?: boolean; enabledPlans?: string[]; enabledForBusinessIds?: string[] }
+  ) {
+    const flag = await this.prisma.featureFlag.findUnique({ where: { id } });
+    if (!flag) throw new NotFoundException("Feature flag not found.");
+    
+    return this.prisma.featureFlag.update({
+      where: { id },
+      data: {
+        globallyEnabled: dto.globallyEnabled,
+        enabledPlans: dto.enabledPlans,
+        enabledForBusinessIds: dto.enabledForBusinessIds
+      }
+    });
+  }
+
+  @Get("api-keys")
+  async listApiKeys() {
+    return this.prisma.apiKey.findMany({
+      include: {
+        business: { select: { id: true, name: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+  }
+
+  @Delete("api-keys/:id")
+  async revokeApiKey(@Param("id") id: string) {
+    const key = await this.prisma.apiKey.findUnique({ where: { id } });
+    if (!key) throw new NotFoundException("API Key not found.");
+    
+    await this.prisma.apiKey.delete({ where: { id } });
+    return { success: true };
   }
 }
