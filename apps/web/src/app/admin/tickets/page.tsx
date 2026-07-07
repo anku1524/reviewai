@@ -47,9 +47,15 @@ export default function AdminTicketsPage() {
     e.preventDefault();
     if (!resolvingTicketId) return;
 
+    const targetTicket = tickets.find((t) => t.id === resolvingTicketId);
+    if (!targetTicket) return;
+
     setSaving(true);
     try {
-      await api.updateTicketStatus(resolvingTicketId, "resolved", notes);
+      await api.updateTicket(targetTicket.business.id, resolvingTicketId, {
+        status: "resolved",
+        resolution: notes,
+      });
       setTickets((prev) =>
         prev.map((t) =>
           t.id === resolvingTicketId
