@@ -15,7 +15,7 @@ const ADMIN_NAV = [
   { href: "/audit-logs", label: "Audit Logs Log", icon: "📜" },
   { href: "/feature-flags", label: "Feature Flags Manager", icon: "🎛️" },
   { href: "/prompt", label: "Prompt Manager", icon: "📝" },
-  { href: "/tickets", label: "Global Escalations", icon: "🎫" },
+  { href: "/tickets", label: "Platform Support Tickets", icon: "🎫" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
