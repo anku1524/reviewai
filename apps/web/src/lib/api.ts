@@ -141,4 +141,15 @@ export const api = {
     request(`/businesses/${businessId}/competitors/sync`, { method: "POST" }),
   createCompetitor: (businessId: string, data: { name: string; rating?: number; reviewCount?: number }) =>
     request(`/businesses/${businessId}/competitors`, { method: "POST", body: JSON.stringify(data) }),
+
+  // Admin Portal Mappings (SaaS operations & billing overrides)
+  adminGetStats: () => request("/admin/stats"),
+  adminListUsers: () => request("/admin/users"),
+  adminUpdateUserRole: (userId: string, role: string) =>
+    request(`/admin/users/${userId}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  adminToggleUserStatus: (userId: string, suspended: boolean) =>
+    request(`/admin/users/${userId}/toggle-status`, { method: "POST", body: JSON.stringify({ suspended }) }),
+  adminListBusinesses: () => request("/admin/businesses"),
+  adminOverrideSubscription: (businessId: string, data: { plan: string; status: string; currentPeriodEnd?: string }) =>
+    request(`/admin/businesses/${businessId}/subscription`, { method: "PATCH", body: JSON.stringify(data) }),
 };

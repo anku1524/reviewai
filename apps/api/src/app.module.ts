@@ -14,6 +14,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { CampaignsModule } from "./campaigns/campaigns.module";
 import { RemindersModule } from "./reminders/reminders.module";
 import { GoogleIntegrationModule } from "./google-integration/google-integration.module";
+import { AdminModule } from "./admin/admin.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { GoogleIntegrationModule } from "./google-integration/google-integration
     CampaignsModule,
     RemindersModule,
     GoogleIntegrationModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

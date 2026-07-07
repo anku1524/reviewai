@@ -8,6 +8,7 @@ import { api } from "../../lib/api";
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: "▦" },
   { href: "/dashboard/locations", label: "Locations", icon: "📍" },
+  { href: "/dashboard/reviews", label: "Reviews", icon: "💬" },
   { href: "/dashboard/team", label: "Team", icon: "👥" },
   { href: "/dashboard/analytics", label: "Analytics", icon: "📊" },
   { href: "/dashboard/widgets", label: "Widgets", icon: "✨" },

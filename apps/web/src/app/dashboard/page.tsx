@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [locationName, setLocationName] = useState("");
   const [locationAddress, setLocationAddress] = useState("");
+  const [locationGooglePlaceId, setLocationGooglePlaceId] = useState("");
   const [submittingLocation, setSubmittingLocation] = useState(false);
 
   const [selectedQrLocation, setSelectedQrLocation] = useState<Location | null>(null);
@@ -160,6 +161,7 @@ export default function DashboardPage() {
       const newLoc = await api.createLocation(selectedBusiness.id, {
         name: locationName,
         address: locationAddress || undefined,
+        googlePlaceId: locationGooglePlaceId || undefined,
       });
 
       // Refresh locations list
@@ -170,6 +172,7 @@ export default function DashboardPage() {
       // Reset fields
       setLocationName("");
       setLocationAddress("");
+      setLocationGooglePlaceId("");
       setShowLocationForm(false);
     } catch (err) {
       console.error(err);
@@ -509,6 +512,17 @@ export default function DashboardPage() {
                   onChange={(e) => setLocationAddress(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
                   placeholder="e.g. 123 Main St, New York"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Google Place ID (Optional)</label>
+                <input
+                  type="text"
+                  value={locationGooglePlaceId}
+                  onChange={(e) => setLocationGooglePlaceId(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                  placeholder="e.g. ChIJ1S-3vGezj4AR0vG20xM204E"
                 />
               </div>
 

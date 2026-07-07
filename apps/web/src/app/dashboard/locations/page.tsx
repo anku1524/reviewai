@@ -23,6 +23,7 @@ export default function LocationsPage() {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [googlePlaceId, setGooglePlaceId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,9 +44,13 @@ export default function LocationsPage() {
     if (!business) return;
     setSaving(true); setError(null);
     try {
-      const loc = await api.createLocation(business.id, { name, address: address || undefined });
+      const loc = await api.createLocation(business.id, {
+        name,
+        address: address || undefined,
+        googlePlaceId: googlePlaceId || undefined,
+      });
       setLocations((prev) => [loc, ...prev]);
-      setName(""); setAddress(""); setShowForm(false);
+      setName(""); setAddress(""); setGooglePlaceId(""); setShowForm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add location.");
     } finally { setSaving(false); }
@@ -90,6 +95,12 @@ export default function LocationsPage() {
               placeholder="Address (optional)"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+            />
+            <input
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              placeholder="Google Place ID (optional, e.g. ChIJ1S-3vGezj4AR0vG20xM204E)"
+              value={googlePlaceId}
+              onChange={(e) => setGooglePlaceId(e.target.value)}
             />
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
