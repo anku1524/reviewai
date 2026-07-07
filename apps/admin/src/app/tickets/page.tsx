@@ -1,5 +1,6 @@
 "use client";
 
+// Vercel rebuild trigger: 2026-07-08
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 
