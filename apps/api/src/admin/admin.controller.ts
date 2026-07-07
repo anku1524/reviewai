@@ -2,11 +2,15 @@ import { Controller, Get, Post, Patch, Param, Body, UseGuards, NotFoundException
 import { JwtAuthGuard } from "../common/guards/auth.guards";
 import { SuperAdminGuard } from "../common/guards/super-admin.guard";
 import { PrismaService } from "../prisma/prisma.service";
+import { JwtService } from "@nestjs/jwt";
 
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
 @Controller("admin")
 export class AdminController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService
+  ) {}
 
   @Get("stats")
   async getSystemStats() {
@@ -123,6 +127,18 @@ export class AdminController {
     });
   }
 
+  @Post("users/:id/impersonate")
+  async impersonateUser(@Param("id") id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException("User not found.");
+
+    // Sign target user token
+    const tokenPayload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwt.sign(tokenPayload);
+
+    return { accessToken };
+  }
+
   @Get("businesses")
   async listBusinesses() {
     return this.prisma.business.findMany({
@@ -161,7 +177,6 @@ export class AdminController {
 
     const periodEnd = dto.currentPeriodEnd ? new Date(dto.currentPeriodEnd) : null;
 
-    // Create or update subscription
     const existingSub = await this.prisma.subscription.findFirst({
       where: { businessId: id },
     });
@@ -185,5 +200,47 @@ export class AdminController {
         },
       });
     }
+  }
+
+  // System Configurations & Prompts Manager
+  @Get("config/prompt")
+  async getPromptConfig() {
+    const config = await this.prisma.systemConfig.findUnique({
+      where: { key: "gemini_review_prompt" },
+    });
+
+    return {
+      prompt: config?.value || "",
+    };
+  }
+
+  @Post("config/prompt")
+  async savePromptConfig(@Body() dto: { value: string }) {
+    if (!dto.value || !dto.value.trim()) {
+      throw new BadRequestException("Prompt value cannot be empty.");
+    }
+
+    return this.prisma.systemConfig.upsert({
+      where: { key: "gemini_review_prompt" },
+      update: { value: dto.value },
+      create: { key: "gemini_review_prompt", value: dto.value },
+    });
+  }
+
+  // Global Customer Support Tickets Inspector
+  @Get("tickets")
+  async listGlobalTickets() {
+    return this.prisma.ticket.findMany({
+      include: {
+        business: {
+          select: { id: true, name: true },
+        },
+        location: {
+          select: { id: true, name: true },
+        },
+        rating: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 }

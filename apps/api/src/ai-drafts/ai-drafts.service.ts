@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class AIDraftsService {
+  constructor(private prisma: PrismaService) {}
+
   private getApiKey(): string | null {
     return process.env.GEMINI_API_KEY ?? null;
   }
@@ -47,10 +50,24 @@ Output ONLY the review text itself, with no titles, quotes, intro, or explanatio
 
   async generateReplyDraft(reviewText: string, stars: number): Promise<string> {
     const apiKey = this.getApiKey();
-    const prompt = `Write a short, professional response from the business owner to the following customer review.
+    
+    let prompt = `Write a short, professional response from the business owner to the following customer review.
 Review Rating: ${stars}/5 stars.
 Review Text: "${reviewText}"
 Output ONLY the reply text, no greeting placeholders like [Name], and no explanations.`;
+
+    try {
+      const customConfig = await this.prisma.systemConfig.findUnique({
+        where: { key: "gemini_review_prompt" }
+      });
+      if (customConfig && customConfig.value && customConfig.value.trim()) {
+        prompt = customConfig.value
+          .replace("{{reviewText}}", reviewText)
+          .replace("{{stars}}", String(stars));
+      }
+    } catch (e) {
+      console.warn("Could not fetch custom prompt from database, using fallback:", e);
+    }
 
     if (apiKey) {
       try {
@@ -194,7 +211,7 @@ ${reviewsText || "No reviews submitted yet."}`;
 
     const key = category.toLowerCase().includes("cafe") ? "cafe"
               : category.toLowerCase().includes("salon") ? "salon"
-              : "restaurant"; // default standard
+              : "restaurant";
 
     return {
       wordCloud: defaultKeywords[key],

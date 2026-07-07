@@ -9,6 +9,8 @@ const ADMIN_NAV = [
   { href: "/admin", label: "Stats Overview", icon: "📊" },
   { href: "/admin/users", label: "User Management", icon: "👥" },
   { href: "/admin/businesses", label: "Business Auditor", icon: "🏢" },
+  { href: "/admin/prompt", label: "Prompt Manager", icon: "📝" },
+  { href: "/admin/tickets", label: "Global Escalations", icon: "🎫" },
   { href: "/dashboard", label: "Exit to Dashboard", icon: "↩️" },
 ];
 

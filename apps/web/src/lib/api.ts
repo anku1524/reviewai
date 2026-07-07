@@ -152,4 +152,10 @@ export const api = {
   adminListBusinesses: () => request("/admin/businesses"),
   adminOverrideSubscription: (businessId: string, data: { plan: string; status: string; currentPeriodEnd?: string }) =>
     request(`/admin/businesses/${businessId}/subscription`, { method: "PATCH", body: JSON.stringify(data) }),
+  adminImpersonateUser: (userId: string) =>
+    request(`/admin/users/${userId}/impersonate`, { method: "POST" }),
+  adminGetPrompt: () => request("/admin/config/prompt"),
+  adminSavePrompt: (value: string) =>
+    request("/admin/config/prompt", { method: "POST", body: JSON.stringify({ value }) }),
+  adminListGlobalTickets: () => request("/admin/tickets"),
 };

@@ -64,6 +64,22 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleImpersonate(userId: string) {
+    try {
+      const res = await api.adminImpersonateUser(userId);
+      const currentToken = localStorage.getItem("token");
+      if (currentToken) {
+        localStorage.setItem("admin_token", currentToken);
+      }
+      localStorage.setItem("token", res.accessToken);
+      alert("Impersonating user... Redirecting to overview.");
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error(err);
+      alert("Failed to impersonate user.");
+    }
+  }
+
   if (loading) {
     return <div className="p-8 text-slate-500 font-medium">Loading user management console...</div>;
   }
@@ -144,7 +160,13 @@ export default function AdminUsersPage() {
                     )}
                   </td>
 
-                  <td className="py-3 px-4 text-right">
+                  <td className="py-3 px-4 text-right flex justify-end gap-2 items-center">
+                    <button
+                      onClick={() => handleImpersonate(user.id)}
+                      className="text-[10px] font-bold transition-all px-2.5 py-1 rounded-md border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                    >
+                      Login As
+                    </button>
                     <button
                       onClick={() => handleToggleSuspension(user.id, user.suspended)}
                       className={`text-[10px] font-bold transition-all px-3 py-1 rounded-md border ${

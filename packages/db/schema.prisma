@@ -279,6 +279,11 @@ model Competitor {
   updatedAt   DateTime @updatedAt
 }
 
+model SystemConfig {
+  key   String @id
+  value String
+}
+
 
 
 
