@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "../../../lib/api";
+import { api } from "../../lib/api";
 
 type User = {
   id: string;
@@ -16,6 +16,8 @@ type User = {
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const webAppUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://web-mu-five-68.vercel.app";
 
   useEffect(() => {
     loadUsers();
@@ -72,8 +74,8 @@ export default function AdminUsersPage() {
         localStorage.setItem("admin_token", currentToken);
       }
       localStorage.setItem("token", res.accessToken);
-      alert("Impersonating user... Redirecting to overview.");
-      window.location.href = "/dashboard";
+      alert("Impersonating user... Redirecting to client dashboard.");
+      window.location.href = `${webAppUrl}/dashboard`;
     } catch (err) {
       console.error(err);
       alert("Failed to impersonate user.");

@@ -46,7 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (adminToken) {
       localStorage.setItem("token", adminToken);
       localStorage.removeItem("admin_token");
-      window.location.href = "/admin/users";
+      const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3002";
+      window.location.href = `${adminUrl}/users`;
     }
   }
 

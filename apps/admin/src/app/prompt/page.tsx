@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "../../../lib/api";
+import { api } from "../../lib/api";
 
 const DEFAULT_PROMPT = `Write a short, professional response from the business owner to the following customer review.
 Review Rating: {{stars}}/5 stars.

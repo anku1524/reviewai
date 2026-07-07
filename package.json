@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace=apps/web",
+    "dev:admin": "npm run dev --workspace=apps/admin -- --port 3002",
     "dev:api": "npm run start:dev --workspace=apps/api",
     "db:generate": "npm run generate --workspace=packages/db",
     "db:migrate": "npm run migrate --workspace=packages/db",
